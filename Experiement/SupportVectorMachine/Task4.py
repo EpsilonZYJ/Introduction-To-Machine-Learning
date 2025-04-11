@@ -10,6 +10,7 @@ def kernel(x, sigma=1.0):
     output:x(ndarray):转化后的值
     '''
     # ********* Begin *********#
-
+    z = x
+    x = (np.dot(x, z.T) + 1) ** 3
     # ********* End *********#
     return x
