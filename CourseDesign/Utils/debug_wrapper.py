@@ -5,7 +5,7 @@ GLOBAL_DEBUG_MODE = True
 def set_debug_mode(is_debug: bool=True):
     """
     设置全局调试模式
-    :param is_debug:
+    :param is_debug: 是否开启调试模式，类型为bool
     """
     global GLOBAL_DEBUG_MODE
     GLOBAL_DEBUG_MODE = is_debug

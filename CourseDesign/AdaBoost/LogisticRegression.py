@@ -6,6 +6,12 @@ class LogisticRegression:
         :param learning_rate: 学习率
         :param n_iters: 最大迭代次数
         :param epsilon: 容忍误差范围
+
+        lr: 学习率
+        its: 最大迭代次数
+        epsilon: 容忍误差范围
+        w: 权重
+        isTrain: 是否是训练状态
         """
         self.lr = learning_rate
         self.its = n_iters
@@ -144,4 +150,3 @@ class LogisticRegression:
                 break
             print(f'iteration {iter} loss: {loss}')
         self.isTrain = False
-        
