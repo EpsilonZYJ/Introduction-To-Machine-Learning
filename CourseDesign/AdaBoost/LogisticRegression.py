@@ -53,6 +53,19 @@ class LogisticRegression:
         z = np.dot(x, self.w)
         return self._sigmoid(z)
 
+    def _predict_probability(self, X):
+        """
+        预测概率值，用于训练时的预测
+        :param X: 特征值
+        :return: 预测值
+        """
+        if not isinstance(X, np.ndarray):
+            X = np.array(X)
+        y_predict = np.zeros(X.shape[0])
+        for i in range(X.shape[0]):
+            y_predict[i] = self._predict_single(X[i])
+        return y_predict
+
     def _CrossEntropyLoss(self, y, y_hat, epsilon=1e-12):
         """
         交叉熵损失函数
@@ -82,18 +95,19 @@ class LogisticRegression:
             y_predict[i] = 1 if self._predict_single(X[i]) >= 0.5 else 0
         return y_predict
 
-    def fit(self, X, y):
+    def fit(self, X, y, batch_size=32):
         """
-        训练函数
+        使用批量随机梯度下降训练逻辑回归函数
         :param X: 训练集特征值
         :param y: 训练集标签值
+        :param batch_size: 每个小批量的大小
         :return:
         """
         self.isTrain = True
         if not isinstance(X, np.ndarray):
-            X = np.ndarray(X)
+            X = np.array(X)
         if not isinstance(y, np.ndarray):
-            y = np.ndarray(y)
+            y = np.array(y)
 
         # 特征拓展
         X = self._feature_extend(X)
@@ -101,13 +115,33 @@ class LogisticRegression:
         # 初始化权重
         self.w = np.zeros(X.shape[1])
 
+        # 获取样本数量
+        n_samples = X.shape[0]
+
         # 迭代训练
-        iter = 0
-        y_hat = np.zeros(y.shape[0])
-        while iter < self.its and self._CrossEntropyLoss(y, y_hat) > self.epsilon:
-            print(f'iteration {iter} loss: {self._CrossEntropyLoss(y, y_hat)}')
-            for i in range(X.shape[0]):
-                y_hat = self._predict_single(X[i])
-                self.w = self.w - self.lr * (y_hat - y[i]) * X[i]
-            iter += 1
+        for iter in range(self.its):
+            indices = np.random.permutation(n_samples)
+            X_shuffled = X[indices]
+            y_shuffled = y[indices]
+
+            # 分批进行训练
+            for start in range(0, n_samples, batch_size):
+                end = min(start + batch_size, n_samples)
+                X_batch = X_shuffled[start:end]
+                y_batch = y_shuffled[start:end]
+
+                # 预测值
+                y_hat = self._predict_probability(X_batch)
+                # 计算梯度
+                gradient = np.dot(X_batch.T, (y_hat - y_batch)) / X_batch.shape[0]
+
+                # 更新权重
+                self.w -= self.lr * gradient
+
+            y_hat = self._predict_probability(X)
+            loss = self._CrossEntropyLoss(y, y_hat)
+            if loss < self.epsilon:
+                break
+            print(f'iteration {iter} loss: {loss}')
         self.isTrain = False
+        

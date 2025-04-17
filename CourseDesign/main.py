@@ -10,7 +10,7 @@ def main(is_debug=True):
     print(train_feature)
     print(train_label)
     # 逻辑回归
-    lr_model = LogisticRegression(n_iters=10000, learning_rate=1e-8)
+    lr_model = LogisticRegression(n_iters=10000, learning_rate=1e-5)
     lr_model.fit(train_feature, train_label)
     # 预测
     y_predict = lr_model.predict(train_feature)
