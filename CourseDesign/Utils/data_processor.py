@@ -3,14 +3,26 @@ import numpy as np
 from .debug_wrapper import Debug
 
 @Debug
-def load_data(filepath: str):
+def load_feature_data(filepath: str):
     """
-    从csv文件加载数据并将其作为numpy数组返回。
+    从csv文件加载特征数据并将其作为numpy数组返回。
     :param filepath: 相对文件路径，类型为str
-    :return: 返回的数组，类型为ndarray
+    :return: 返回特征数组，类型为ndarray
     """
     data = pd.read_csv(filepath, header=None)
     return data.to_numpy()
+
+def load_label_data(filepath: str):
+    """
+    从csv文件加载标签数据并将其作为numpy数组返回。
+    :param filepath: 相对文件路径，类型为str
+    :return: 返回标签数组，类型为ndarray
+    """
+    data = pd.read_csv(filepath, header=None)
+    data = data.to_numpy()
+    data = data.flatten()
+    return data
+
 
 @Debug
 def save_data(filepath: str, data, index):
