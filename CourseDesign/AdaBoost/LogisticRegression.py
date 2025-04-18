@@ -1,7 +1,7 @@
 import numpy as np
 
 class LogisticRegression:
-    def __init__(self, learning_rate=0.05, n_iters: int=1000, epsilon=1e-8):
+    def __init__(self, learning_rate=1e-5, n_iters: int=1000, epsilon=1e-8):
         """
         :param learning_rate: 学习率
         :param n_iters: 最大迭代次数
@@ -148,5 +148,45 @@ class LogisticRegression:
             loss = self._CrossEntropyLoss(y, y_hat)
             if loss < self.epsilon:
                 break
-            print(f'iteration {iter} loss: {loss}')
+        self.isTrain = False
+
+    def train(self, X, y, sample_weights):
+        """
+        训练函数，适用于AdaBoost
+
+        :param X: 训练集特征
+        :param y: 训练集标签
+        :param sample_weights: 样本权重
+        :return:
+        """
+        self.isTrain = True
+        if not isinstance(X, np.ndarray):
+            X = np.array(X)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+
+        # 特征拓展
+        X = self._feature_extend(X)
+
+        # 初始化权重
+        self.w = np.zeros(X.shape[1])
+
+        # 获取样本数量
+        n_samples = X.shape[0]
+
+        # 迭代训练
+        for iter in range(self.its):
+            # 根据错误率更新样本权重
+            y_hat = self._predict_probability(X)
+            error = sample_weights * (y_hat - y)
+            gradient = np.dot(X.T, error) / X.shape[0]
+
+            # 更新权重
+            new_w = self.w - self.lr * gradient
+
+            if np.linalg.norm(new_w) < self.epsilon:
+                break
+            self.w = new_w
+
+        # 训练完成，设置为非训练状态
         self.isTrain = False

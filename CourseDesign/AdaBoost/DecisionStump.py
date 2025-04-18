@@ -143,9 +143,48 @@ class DecisionStump:
         self.left_value = self._classification(left_label)
         self.right_value = self._classification(right_label)
 
-        if self.left_value == self.right_value:
-            raise ValueError("当前数据集无法进行划分")
+        # if self.left_value == self.right_value:
+        #     raise ValueError("当前数据集无法进行划分")
 
+    def train(self, X, y, sample_weights):
+        """
+        适用于AdaBoost的训练函数
+
+        :param X: 训练集特征
+        :param y: 训练集标签
+        :param sample_weights: 样本权重
+        :return:
+        """
+        if not isinstance(X, np.ndarray):
+            X = np.array(X)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+        if not isinstance(sample_weights, np.ndarray):
+            sample_weights = np.array(sample_weights)
+
+        best_err = 1.0
+        # 遍历所有的特征
+        for feature_index in range(X.shape[1]):
+            feature = X[:, feature_index]
+            # 获取所有的可能分割的阈值
+            thresholds = self._get_candidate_thresholds(feature)
+
+            # 对所有可能的阈值进行分割，并且计算加权错误率
+            for threshold in thresholds:
+                # 计算加权错误率
+                prediction = np.ones(X.shape[0])
+                prediction[feature <= threshold] = 0
+                err = np.sum(sample_weights * (prediction != y))
+
+                # 按照更低错误率进行更新
+                if min(err, 1-err) < best_err:
+                    best_err = err
+                    self.feature_index = feature_index
+                    self.threshold = threshold
+        self.left_value = self._classification(y[X[:, self.feature_index] <= self.threshold])
+        self.right_value = self._classification(y[X[:, self.feature_index] > self.threshold])
+        # if self.left_value == self.right_value:
+        #     raise ValueError("当前数据集无法进行划分")
 
     def predict(self, X):
         """
