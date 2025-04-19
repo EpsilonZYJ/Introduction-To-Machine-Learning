@@ -150,7 +150,7 @@ class LogisticRegression:
                 break
         self.isTrain = False
 
-    def train(self, X, y, sample_weights):
+    def train(self, X, y, sample_weights, batch_size=32):
         """
         训练函数，适用于AdaBoost
 
@@ -176,17 +176,33 @@ class LogisticRegression:
 
         # 迭代训练
         for iter in range(self.its):
-            # 根据错误率更新样本权重
+            indices = np.random.permutation(n_samples)
+            X_shuffled = X[indices]
+            y_shuffled = y[indices]
+            sample_weights_shuffled = sample_weights[indices]
+            # 分批进行训练
+
+            for start in range(0, n_samples, batch_size):
+                end = min(start + batch_size, n_samples)
+                X_batch = X_shuffled[start:end]
+                y_batch = y_shuffled[start:end]
+                sample_weights_batch = sample_weights_shuffled[start:end]
+
+                # 预测值
+                y_hat = self._predict_probability(X_batch)
+                # 计算梯度
+                # gradient = np.dot(X_batch.T, (y_hat - y_batch) * sample_weights) / X_batch.shape[0]
+                err = (y_hat - y_batch) * sample_weights_batch
+                grad = X_batch.T.dot(err) / len(y_batch)
+
+                # 更新权重
+                self.w -= self.lr * grad
+
             y_hat = self._predict_probability(X)
-            error = sample_weights * (y_hat - y)
-            gradient = np.dot(X.T, error) / X.shape[0]
-
-            # 更新权重
-            new_w = self.w - self.lr * gradient
-
-            if np.linalg.norm(new_w) < self.epsilon:
+            loss = self._CrossEntropyLoss(y, y_hat)
+            if loss < self.epsilon:
                 break
-            self.w = new_w
+            # print("iter: ", iter, "loss: ", loss)
 
         # 训练完成，设置为非训练状态
         self.isTrain = False

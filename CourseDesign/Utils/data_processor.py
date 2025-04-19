@@ -1,6 +1,11 @@
 import pandas as pd
 import numpy as np
+import copy
+
+from AdaBoost import AdaBoost
+from .Accuracy import accuracy
 from .debug_wrapper import Debug
+
 
 @Debug
 def load_feature_data(filepath: str):
@@ -41,3 +46,49 @@ def save_data(filepath: str, data, index):
     fout = [index, data]
     df = pd.DataFrame(fout)
     df.to_csv(filepath, index=False, header=False)
+
+@Debug
+def get_k_fold_data(k, i, X, y):
+    """
+    获取k折交叉验证的数据
+
+    :param k: 折数
+    :param i: 第i折
+    :param X: 特征集合
+    :param y: 标签集合
+    :return: 第i折的训练集和测试集
+    """
+    assert k > 1
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(y, np.ndarray):
+        y = np.array(y)
+    fold_size = X.shape[0] // k
+    X_train, y_train = None, None
+    for j in range(k):
+        idx = slice(j * fold_size, min((j + 1) * fold_size, X.shape[0]))
+        X_part = X[idx, :]
+        y_part = y[idx]
+        # 如果是第i折，则将其作为验证集
+        if j == i:
+            X_valid, y_valid = X_part, y_part
+        # 否则将其作为训练集
+        elif X_train is None:
+            X_train, y_train = X_part, y_part
+        else:
+            X_train = np.concatenate((X_train, X_part), axis=0)
+            y_train = np.concatenate((y_train, y_part), axis=0)
+    return X_train, y_train, X_valid, y_valid
+
+@Debug
+def k_fold(k, X_train, y_train, n_estimators, base_model):
+    train_acc_sum, valid_acc_sum = 0, 0
+    for i in range(k):
+        data = get_k_fold_data(k, i, X_train, y_train)
+        model = AdaBoost(n_estimators=n_estimators, base_estimator=copy.deepcopy(base_model))
+        model.fit(data[0], data[1])
+        train_acc_sum += accuracy(data[1], model.predict(data[0]))
+        valid_acc_sum += accuracy(data[3], model.predict(data[2]))
+        print(f'Fold {i + 1}: train acc: {train_acc_sum / (i + 1):.4f}, valid acc: {valid_acc_sum / (i + 1):.4f}')
+    return train_acc_sum / k, valid_acc_sum / k
+

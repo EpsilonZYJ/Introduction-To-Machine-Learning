@@ -90,6 +90,7 @@ class AdaBoost:
         for t in trange(self.n_estimators):
             model = copy.deepcopy(self.base_estimator)
 
+            sample_weights = np.clip(sample_weights, a_min=np.finfo(sample_weights.dtype).eps, a_max=None)
             # 在数据集上以权重sample_weights训练基学习器
             model.train(X, y, sample_weights)
 
@@ -98,12 +99,19 @@ class AdaBoost:
             err = np.sum(sample_weights * (y_pred != y)) / np.sum(sample_weights)
 
             # 若基分类器比随机猜测还差则终止算法
-            if err >= 0.5:
+            if err >= 0.5 and len(self.estimators) > 0:
                 continue
-            alpha = 1/2 * np.log((1 - err) / (err + 1e-12))
+            elif err > 0.5:
+                raise ValueError("不可分类的样本")
+            alpha = 0.5 * np.log((1 - err) / (err + 1e-12))
 
             # 更新样本权重
-            sample_weights = sample_weights * np.exp(-alpha * (2 * y - 1) * (2 * y_pred - 1))
+            # sample_weights = sample_weights * np.exp(-alpha * (2 * y - 1) * (2 * y_pred - 1))
+            for i in range(sample_weights.shape[0]):
+                if y_pred[i] == y[i]:
+                    sample_weights[i] *= np.exp(-alpha)
+                else:
+                    sample_weights[i] *= np.exp(alpha)
 
             # 归一化样本权重
             sample_weights /= np.sum(sample_weights)
