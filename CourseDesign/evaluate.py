@@ -9,6 +9,6 @@ for base_num in base_list:
         accuracy = sum(target[fold[:, 0] - 1] == fold[:, 1]) / fold.shape[0]
         # print(fold)
         acc.append(accuracy)
-    print(acc)
+    # print(acc)
 
     print(np.array(acc).mean())

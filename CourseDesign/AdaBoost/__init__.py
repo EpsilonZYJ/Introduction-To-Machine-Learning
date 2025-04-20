@@ -1,4 +1,4 @@
-from .LogisticRegression import LogisticRegression
-from .DecisionStump import DecisionStump
-from .AdaBoost import AdaBoost
 from .AdaBoostClassifier import AdaBoostClassifier
+from .BaseModel import binary_label, pos_neg_label
+from .DecisionStumpClassifier import DecisionStumpClassifier
+from .LogisticRegressionClassifier import LogisticRegressionClassifier
