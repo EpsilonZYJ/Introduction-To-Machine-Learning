@@ -1,8 +1,11 @@
 import numpy as np
 from Utils import *
 from AdaBoost import *
-from Utils.data_processor import k_fold
+from Utils.data_processor import k_fold, class_balance
 from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier as ABC
+from sklearn.linear_model import LogisticRegression as LR
 
 def main(is_debug=True):
     set_debug_mode(True)
@@ -13,11 +16,12 @@ def main(is_debug=True):
     print(train_feature)
     print(train_label)
     # 数据标准化
-    scaler = StandardScaler()
-    scaler.fit(train_feature)
-    train_feature = scaler.transform(train_feature)
-    print(train_feature)
-    print(train_label)
+    # scaler = StandardScaler()
+    # scaler.fit(train_feature)
+    # train_feature = scaler.transform(train_feature)
+    # print(train_feature)
+    # print(train_label)
+    # train_feature, train_label = class_balance(train_feature, train_label)
     # 数据随机打乱
     # n_samples = train_feature.shape[0]
     # indices = np.random.permutation(n_samples)
@@ -25,11 +29,13 @@ def main(is_debug=True):
     # train_label = train_label[indices]
 
     # 逻辑回归
-    # lr_model = LogisticRegression(n_iters=10000, learning_rate=1e-5)
-    # lr_model.train(train_feature, train_label, sample_weights=1/np.ones(train_label.shape[0]))
+    # lr_model = LogisticRegression(n_iters=100, learning_rate=1e-1)
+    # lr_model.fit(train_feature, train_label, sample_weight=1/np.ones(train_label.shape[0]))
     # 预测
     # y_predict = lr_model.predict(train_feature)
     # print(accuracy(train_label, y_predict))
+    # print(len(train_label[train_label == 1]))
+    # print(len(train_label[train_label == 0]))
 
     # 逻辑回归
     # lr_model = LogisticRegression(n_iters=1000, learning_rate=1e-1)
@@ -46,15 +52,27 @@ def main(is_debug=True):
     # print(accuracy(train_label, y_predict))
 
     # AdaBoost
-    # ada_model = AdaBoost(n_estimators=100, base_estimator=LogisticRegression(learning_rate=1e-1, n_iters=100))
-    # ada_model = AdaBoost(n_estimators=10, base_estimator=DecisionStump())
-    # ada_model.fit(train_feature, train_label)
+    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=LogisticRegression(learning_rate=1e-1, n_iters=100))
+    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=DecisionStump())
+    # ada_model = AdaBoostClassifier(learning_rate=1.0, n_estimators=10, estimator=LogisticRegression(learning_rate=1e-1, n_iters=100))
+    ada_model = AdaBoostClassifier(n_estimators=10, estimator=DecisionTreeClassifier(max_depth=1))
+    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=LR())
+    ada_model.fit(train_feature, train_label)
+    # print(len(ada_model.estimators_))
     # 预测
-    # y_predict = ada_model.predict(train_feature, label_decode=True)
-    # print(accuracy(train_label, y_predict))
+    y_predict = ada_model.predict(train_feature, is_boolean_label=True)
+    print(accuracy(train_label, y_predict))
 
-    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=1, base_model=LogisticRegression(n_iters=500, learning_rate=1e-1))
-    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=5, base_model=LogisticRegression(n_iters=500, learning_rate=1e-1))
+    ada_model = ABC(n_estimators=10, estimator=DecisionTreeClassifier(max_depth=1))
+    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=LR())
+    ada_model.fit(train_feature, train_label)
+    # print(len(ada_model.estimators_))
+    # 预测
+    y_predict = ada_model.predict(train_feature)
+    print(accuracy(train_label, y_predict))
+
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=1, base_model=LogisticRegression(n_iters=100, learning_rate=1e-1))
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=5, base_model=LogisticRegression(n_iters=100, learning_rate=1e-1))
     k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=10, base_model=LogisticRegression(n_iters=100, learning_rate=1e-1))
     k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=100, base_model=LogisticRegression(n_iters=100, learning_rate=1e-1))
 

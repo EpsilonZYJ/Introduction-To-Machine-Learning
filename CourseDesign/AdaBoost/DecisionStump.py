@@ -13,7 +13,32 @@ class DecisionStump:
         self.feature_index = None
         self.threshold = None
         self.left_value = None
-        self.right_value = None
+        self.right_value =None
+
+    def _random_init(self, X, y):
+        """
+        随机初始化决策树桩
+        :param X:
+        :param y:
+        :return:
+        """
+        if not isinstance(X, np.ndarray):
+            X = np.array(X)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+
+        # 随机选择一个特征
+        feature_index = np.random.randint(0, X.shape[1])
+        feature = X[:, feature_index]
+        # 随机选择一个阈值
+        thresholds = self._get_candidate_thresholds(feature)
+        threshold = thresholds[np.random.randint(0, len(thresholds))]
+
+        # 随机选择一个标签
+        left_label = y[X[:, feature_index] <= threshold]
+        right_label = y[X[:, feature_index] > threshold]
+        left_value = self._classification(left_label)
+        right_value = self._classification(right_label)
 
     def _entropy(self, y):
         """
@@ -108,7 +133,7 @@ class DecisionStump:
                 best_count = cur_count
         return best_label
 
-    def fit(self, X, y):
+    def train(self, X, y):
         """
         训练决策树桩
 
@@ -146,21 +171,21 @@ class DecisionStump:
         # if self.left_value == self.right_value:
         #     raise ValueError("当前数据集无法进行划分")
 
-    def train(self, X, y, sample_weights):
+    def fit(self, X, y, sample_weight):
         """
         适用于AdaBoost的训练函数
 
         :param X: 训练集特征
         :param y: 训练集标签
-        :param sample_weights: 样本权重
+        :param sample_weight: 样本权重
         :return:
         """
         if not isinstance(X, np.ndarray):
             X = np.array(X)
         if not isinstance(y, np.ndarray):
             y = np.array(y)
-        if not isinstance(sample_weights, np.ndarray):
-            sample_weights = np.array(sample_weights)
+        if not isinstance(sample_weight, np.ndarray):
+            sample_weight = np.array(sample_weight)
 
         best_err = 1.0
         # 遍历所有的特征
@@ -174,7 +199,7 @@ class DecisionStump:
                 # 计算加权错误率
                 prediction = np.ones(X.shape[0])
                 prediction[feature <= threshold] = 0
-                err = np.sum(sample_weights * (prediction != y))
+                err = np.sum(sample_weight * (prediction != y))
 
                 # 按照更低错误率进行更新
                 if min(err, 1-err) < best_err:

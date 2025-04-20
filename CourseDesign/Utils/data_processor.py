@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import copy
 
-from AdaBoost import AdaBoost
+from AdaBoost import AdaBoost, AdaBoostClassifier
 from .Accuracy import accuracy
 from .debug_wrapper import Debug
 
@@ -46,6 +46,7 @@ def save_data(filepath: str, data, index):
     df = pd.DataFrame(
         {'index': index, 'predict': data}
     )
+    print(df)
     df.to_csv(filepath, index=False, header=False)
 
 @Debug
@@ -82,15 +83,64 @@ def get_k_fold_data(k, i, X, y):
     return X_train, y_train, X_valid, y_valid, np.array(range(i * fold_size + 1, min((i + 1) * fold_size, X.shape[0]) + 1))
 
 @Debug
+def class_balance(X, y):
+    """
+    处理训练集类别不平衡的问题
+    :param X: 训练集特征
+    :param y: 训练集标签
+    :return:
+    """
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(y, np.ndarray):
+        y = np.array(y)
+    feature0 = X[y == 0]
+    feature1 = X[y == 1]
+    label0 = y[y == 0]
+    label1 = y[y == 1]
+    count0 = len(label0)
+    count1 = len(label1)
+    cnt = min(count0, count1)
+    if count0 * 1e2 <count1 or count1 * 1e2 < count0:
+        return X, y
+
+    # 随机选择count个样本
+    indices = np.random.choice(len(label0), cnt, replace=False)
+    feature0 = feature0[indices]
+    label0 = label0[indices]
+
+    indices = np.random.choice(len(label1), cnt, replace=False)
+    feature1 = feature1[indices]
+    label1 = label1[indices]
+
+    # 合并数据
+    X = np.concatenate((feature0, feature1), axis=0)
+    y = np.concatenate((label0, label1), axis=0)
+    # 打乱数据
+    indices = np.random.permutation(X.shape[0])
+    X = X[indices]
+    y = y[indices]
+    return X, y
+
+
+
+@Debug
 def k_fold(k, X_train, y_train, n_estimators, base_model):
     train_acc_sum, valid_acc_sum = 0, 0
     for i in range(k):
         data = get_k_fold_data(k, i, X_train, y_train)
-        model = AdaBoost(n_estimators=n_estimators, base_estimator=copy.deepcopy(base_model))
-        model.fit(data[0], data[1])
+        model = AdaBoostClassifier(n_estimators=n_estimators, estimator=copy.deepcopy(base_model))
+        train_feature = data[0]
+        train_label = data[1]
+
+        # 处理类别不平衡
+        train_feature, train_label = class_balance(train_feature, train_label)
+        # 训练模型
+        model.fit(train_feature, train_label)
         train_acc_sum += accuracy(data[1], model.predict(data[0]))
         valid_acc_sum += accuracy(data[3], model.predict(data[2]))
         print(f'Fold {i + 1}: train acc: {train_acc_sum / (i + 1):.4f}, valid acc: {valid_acc_sum / (i + 1):.4f}')
+        print(data[2])
         save_data(f'./experiments/base{n_estimators}_fold{i + 1}.csv', model.predict(data[2]), data[4])
     return train_acc_sum / k, valid_acc_sum / k
 

@@ -1,3 +1,5 @@
+from random import gauss
+
 import numpy as np
 
 class LogisticRegression:
@@ -18,6 +20,21 @@ class LogisticRegression:
         self.epsilon = epsilon
         self.w = None
         self.isTrain = False
+
+    def _random_init(self, X, y):
+        """
+        随机初始化权重
+        :param X:
+        :param y:
+        :return:
+        """
+        if not isinstance(X, np.ndarray):
+            X = np.array(X)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+
+        self.w = np.random.normal(0, np.sqrt(2.0/(X.shape[1]+1)), size=(X.shape[1] + 1, 1))
+
 
     def _feature_extend(self, x):
         """
@@ -101,7 +118,7 @@ class LogisticRegression:
             y_predict[i] = 1 if self._predict_single(X[i]) >= 0.5 else 0
         return y_predict
 
-    def fit(self, X, y, batch_size=32):
+    def train(self, X, y, batch_size=32):
         """
         使用批量随机梯度下降训练逻辑回归函数
         :param X: 训练集特征值
@@ -150,13 +167,13 @@ class LogisticRegression:
                 break
         self.isTrain = False
 
-    def train(self, X, y, sample_weights, batch_size=32):
+    def fit(self, X, y, sample_weight, batch_size=32):
         """
         训练函数，适用于AdaBoost
 
         :param X: 训练集特征
         :param y: 训练集标签
-        :param sample_weights: 样本权重
+        :param sample_weight: 样本权重
         :return:
         """
         self.isTrain = True
@@ -179,7 +196,7 @@ class LogisticRegression:
             indices = np.random.permutation(n_samples)
             X_shuffled = X[indices]
             y_shuffled = y[indices]
-            sample_weights_shuffled = sample_weights[indices]
+            sample_weights_shuffled = sample_weight[indices]
             # 分批进行训练
 
             for start in range(0, n_samples, batch_size):

@@ -92,7 +92,7 @@ class AdaBoost:
 
             sample_weights = np.clip(sample_weights, a_min=np.finfo(sample_weights.dtype).eps, a_max=None)
             # 在数据集上以权重sample_weights训练基学习器
-            model.train(X, y, sample_weights)
+            model.fit(X, y, sample_weights)
 
             # 计算加权错误率
             y_pred = model.predict(X)
