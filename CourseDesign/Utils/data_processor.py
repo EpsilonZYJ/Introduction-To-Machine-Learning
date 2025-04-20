@@ -43,8 +43,9 @@ def save_data(filepath: str, data, index):
         data = data.tolist()
     if isinstance(index, np.ndarray):
         index = index.tolist()
-    fout = [index, data]
-    df = pd.DataFrame(fout)
+    df = pd.DataFrame(
+        {'index': index, 'predict': data}
+    )
     df.to_csv(filepath, index=False, header=False)
 
 @Debug
@@ -58,7 +59,7 @@ def get_k_fold_data(k, i, X, y):
     :param y: 标签集合
     :return: 第i折的训练集和测试集
     """
-    assert k > 1
+    assert k > 0
     if not isinstance(X, np.ndarray):
         X = np.array(X)
     if not isinstance(y, np.ndarray):
@@ -78,7 +79,7 @@ def get_k_fold_data(k, i, X, y):
         else:
             X_train = np.concatenate((X_train, X_part), axis=0)
             y_train = np.concatenate((y_train, y_part), axis=0)
-    return X_train, y_train, X_valid, y_valid
+    return X_train, y_train, X_valid, y_valid, np.array(range(i * fold_size + 1, min((i + 1) * fold_size, X.shape[0]) + 1))
 
 @Debug
 def k_fold(k, X_train, y_train, n_estimators, base_model):
@@ -90,5 +91,6 @@ def k_fold(k, X_train, y_train, n_estimators, base_model):
         train_acc_sum += accuracy(data[1], model.predict(data[0]))
         valid_acc_sum += accuracy(data[3], model.predict(data[2]))
         print(f'Fold {i + 1}: train acc: {train_acc_sum / (i + 1):.4f}, valid acc: {valid_acc_sum / (i + 1):.4f}')
+        save_data(f'./experiments/base{n_estimators}_fold{i + 1}.csv', model.predict(data[2]), data[4])
     return train_acc_sum / k, valid_acc_sum / k
 

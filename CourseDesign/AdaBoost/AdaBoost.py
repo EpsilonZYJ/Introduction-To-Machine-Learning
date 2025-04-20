@@ -137,6 +137,6 @@ class AdaBoost:
             y_pred += alpha * model.predict(X)
         y_pred = np.sign(y_pred)
         if not label_decode:
-            return y_pred
+            return np.array(y_pred, dtype=int)
         else:
-            return self._label_decode(y_pred)
+            return np.array(self._label_decode(y_pred), dtype=int)

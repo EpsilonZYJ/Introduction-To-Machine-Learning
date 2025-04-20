@@ -19,10 +19,10 @@ def main(is_debug=True):
     print(train_feature)
     print(train_label)
     # 数据随机打乱
-    n_samples = train_feature.shape[0]
-    indices = np.random.permutation(n_samples)
-    train_feature = train_feature[indices]
-    train_label = train_label[indices]
+    # n_samples = train_feature.shape[0]
+    # indices = np.random.permutation(n_samples)
+    # train_feature = train_feature[indices]
+    # train_label = train_label[indices]
 
     # 逻辑回归
     # lr_model = LogisticRegression(n_iters=10000, learning_rate=1e-5)
@@ -53,8 +53,10 @@ def main(is_debug=True):
     # y_predict = ada_model.predict(train_feature, label_decode=True)
     # print(accuracy(train_label, y_predict))
 
-    # k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=10, base_model=LogisticRegression(n_iters=500, learning_rate=1e-1))
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=1, base_model=LogisticRegression(n_iters=500, learning_rate=1e-1))
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=5, base_model=LogisticRegression(n_iters=500, learning_rate=1e-1))
     k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=10, base_model=LogisticRegression(n_iters=100, learning_rate=1e-1))
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=100, base_model=LogisticRegression(n_iters=100, learning_rate=1e-1))
 
 if __name__ == '__main__':
     main(True)
