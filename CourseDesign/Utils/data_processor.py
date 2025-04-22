@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
-import copy
 
-from AdaBoost import AdaBoost, AdaBoostClassifier
+from AdaBoost import AdaBoostClassifier, pos_neg_label, binary_label
 from .Accuracy import accuracy
 from .debug_wrapper import Debug
 
@@ -43,10 +42,11 @@ def save_data(filepath: str, data, index):
         data = data.tolist()
     if isinstance(index, np.ndarray):
         index = index.tolist()
+    if len(data) != len(index):
+        raise ValueError("数据长度和索引长度不一致")
     df = pd.DataFrame(
         {'index': index, 'predict': data}
     )
-    print(df)
     df.to_csv(filepath, index=False, header=False)
 
 @Debug
@@ -101,6 +101,8 @@ def class_balance(X, y):
     count0 = len(label0)
     count1 = len(label1)
     cnt = min(count0, count1)
+
+    # 如果类别不平衡的比例过大，则不进行处理
     if count0 * 1e2 <count1 or count1 * 1e2 < count0:
         return X, y
 
@@ -125,22 +127,54 @@ def class_balance(X, y):
 
 
 @Debug
-def k_fold(k, X_train, y_train, n_estimators, base_model):
+def k_fold(k, X_train, y_train, n_estimators, base_model_class, isClassBalanced=True, isShuffled=False, **base_model_params):
+    """
+    k折交叉验证，训练模型并保存结果
+
+    :param k: 折数
+    :param X_train: 训练集特征
+    :param y_train: 训练集标签
+    :param n_estimators: 基学习器的数量
+    :param base_model_class: 基学习器的类
+    :param isClassBalanced: 是否进行类别平衡
+    :param isShuffled: 是否打乱数据
+    :param base_model_params: 传给基学习器的参数
+    :return: 总的训练集准确率和验证集准确率
+    """
     train_acc_sum, valid_acc_sum = 0, 0
     for i in range(k):
         data = get_k_fold_data(k, i, X_train, y_train)
-        model = AdaBoostClassifier(n_estimators=n_estimators, estimator=copy.deepcopy(base_model))
+        model = AdaBoostClassifier(n_estimators=n_estimators, estimator_class=base_model_class, **base_model_params)
         train_feature = data[0]
         train_label = data[1]
 
         # 处理类别不平衡
-        train_feature, train_label = class_balance(train_feature, train_label)
+        if isClassBalanced:
+            train_feature, train_label = class_balance(train_feature, train_label)
+
+        if isShuffled:
+            # 打乱数据
+            indices = np.random.permutation(train_feature.shape[0])
+            train_feature = train_feature[indices]
+            train_label = train_label[indices]
+
+        # 处理标签
+        train_label = pos_neg_label(train_label)
+
         # 训练模型
         model.fit(train_feature, train_label)
-        train_acc_sum += accuracy(data[1], model.predict(data[0]))
-        valid_acc_sum += accuracy(data[3], model.predict(data[2]))
-        print(f'Fold {i + 1}: train acc: {train_acc_sum / (i + 1):.4f}, valid acc: {valid_acc_sum / (i + 1):.4f}')
-        print(data[2])
-        save_data(f'./experiments/base{n_estimators}_fold{i + 1}.csv', model.predict(data[2]), data[4])
+
+        train_pred = model.predict(data[0])
+        valid_pred = model.predict(data[2])
+        # 处理标签
+        train_pred = binary_label(train_pred)
+        valid_pred = binary_label(valid_pred)
+
+        train_acc_sum += accuracy(data[1], train_pred)
+        valid_acc_sum += accuracy(data[3], valid_pred)
+        print(f'Fold {i + 1}, Accumulated accuracy: train acc: {train_acc_sum / (i + 1):.4f}, valid acc: {valid_acc_sum / (i + 1):.4f}')
+        # print(valid_pred)
+        # print(data[3])
+        save_data(f'./experiments/base{n_estimators}_fold{i + 1}.csv', valid_pred, data[4])
     return train_acc_sum / k, valid_acc_sum / k
 
