@@ -16,6 +16,17 @@ class DecisionStumpClassifier(BaseWeakLearner):
         self.min_error = float('inf')   # 最小的加权错误率
 
 
+    def _get_candidate_thresholds(self, feature):
+        """
+        获取候选阈值
+
+        :param feature: 特征
+        :return: 候选阈值
+        """
+        if not isinstance(feature, np.ndarray):
+            feature = np.array(feature)
+        thresholds = np.unique(feature)
+        return (thresholds[:-1] + thresholds[1:]) / 2
 
 
     def fit(self, X, y, weights):
@@ -44,7 +55,8 @@ class DecisionStumpClassifier(BaseWeakLearner):
         # 遍历每个特征，找到最好的阈值和极性
         for feature_idx in range(n_features):
             feature = X[:, feature_idx]
-            thresholds = np.unique(feature)
+            # thresholds = np.unique(feature)
+            thresholds = self._get_candidate_thresholds(feature)
 
             # 遍历所有可能的阈值
             for threshold in thresholds:

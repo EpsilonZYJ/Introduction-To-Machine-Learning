@@ -102,6 +102,8 @@ def class_balance(X, y):
     count0 = len(label0)
     count1 = len(label1)
     cnt = min(count0, count1)
+
+    # 如果类别不平衡的比例过大，则不进行处理
     if count0 * 1e2 <count1 or count1 * 1e2 < count0:
         return X, y
 
@@ -126,7 +128,7 @@ def class_balance(X, y):
 
 
 @Debug
-def k_fold(k, X_train, y_train, n_estimators, base_model_class, isClassBalanced=True, **base_model_params):
+def k_fold(k, X_train, y_train, n_estimators, base_model_class, isClassBalanced=True, isShuffled=False, **base_model_params):
     """
     k折交叉验证，训练模型并保存结果
 
@@ -136,6 +138,7 @@ def k_fold(k, X_train, y_train, n_estimators, base_model_class, isClassBalanced=
     :param n_estimators: 基学习器的数量
     :param base_model_class: 基学习器的类
     :param isClassBalanced: 是否进行类别平衡
+    :param isShuffled: 是否打乱数据
     :param base_model_params: 传给基学习器的参数
     :return: 总的训练集准确率和验证集准确率
     """
@@ -149,6 +152,12 @@ def k_fold(k, X_train, y_train, n_estimators, base_model_class, isClassBalanced=
         # 处理类别不平衡
         if isClassBalanced:
             train_feature, train_label = class_balance(train_feature, train_label)
+
+        if isShuffled:
+            # 打乱数据
+            indices = np.random.permutation(train_feature.shape[0])
+            train_feature = train_feature[indices]
+            train_label = train_label[indices]
 
         # 处理标签
         train_label = pos_neg_label(train_label)
@@ -164,7 +173,9 @@ def k_fold(k, X_train, y_train, n_estimators, base_model_class, isClassBalanced=
 
         train_acc_sum += accuracy(data[1], train_pred)
         valid_acc_sum += accuracy(data[3], valid_pred)
-        print(f'Fold {i + 1}: train acc: {train_acc_sum / (i + 1):.4f}, valid acc: {valid_acc_sum / (i + 1):.4f}')
+        print(f'Fold {i + 1}, Accumulated accuracy: train acc: {train_acc_sum / (i + 1):.4f}, valid acc: {valid_acc_sum / (i + 1):.4f}')
+        # print(valid_pred)
+        # print(data[3])
         save_data(f'./experiments/base{n_estimators}_fold{i + 1}.csv', valid_pred, data[4])
     return train_acc_sum / k, valid_acc_sum / k
 

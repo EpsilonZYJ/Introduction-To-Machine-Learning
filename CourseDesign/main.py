@@ -3,6 +3,7 @@ from Utils import *
 from AdaBoost import *
 from Utils.data_processor import k_fold, class_balance
 from sklearn.preprocessing import StandardScaler
+import numpy as np
 
 def train(base_model_class, isClassBalanced=True, isStandard=False, **base_params):
     """
@@ -24,7 +25,6 @@ def train(base_model_class, isClassBalanced=True, isStandard=False, **base_param
         scaler = StandardScaler()
         scaler.fit(train_feature)
         train_feature = scaler.transform(train_feature)
-        train_feature, train_label = class_balance(train_feature, train_label)
 
     print("[Preparing] Data loaded successfully.")
     print("[Running] Training model...")
@@ -47,19 +47,29 @@ def train(base_model_class, isClassBalanced=True, isStandard=False, **base_param
     k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=100, base_model_class=base_model_class, isClassBalanced=isClassBalanced,**base_params)
     print("[Training] Done!")
 
+def test():
+    train_feature = load_feature_data('data.csv')
+    train_label = load_label_data('targets.csv')
+    train_label = pos_neg_label(train_label)
+    model = AdaBoostClassifier(n_estimators=10, estimator_class=DecisionStumpClassifier)
+    model.fit(train_feature[368:, :], train_label[368:])
+    y_pred = model.predict(train_feature[0: 368, :])
+    save_data("test.csv", y_pred, np.array(range(len(y_pred))) + 1)
+
 
 def main(is_debug=True):
-    set_debug_mode(False)
+    set_debug_mode(is_debug)
     if len(sys.argv) > 1:
         isDecisionStump = sys.argv[1]
         if isDecisionStump == '1':
             train(DecisionStumpClassifier)
         elif isDecisionStump == '0':
-            train(LogisticRegressionClassifier, n_iters=1000, learning_rate=1e-1)
+            train(LogisticRegressionClassifier, n_iterations=1000, learning_rate=1e-1)
         else:
             raise ValueError("Invalid argument. Use 1 for DecisionStump and 0 for LogisticRegression.")
     else:
-        train(base_model_class=DecisionStumpClassifier, isClassBalanced=False, isStandard=True)
+        train(base_model_class=DecisionStumpClassifier, isClassBalanced=True, isStandard=False, isShuffled=True)
+        # train(LogisticRegressionClassifier, isClassBalanced=True, isStandard=True, isShuffled=True, n_iterations=5000, learning_rate=1e-1)
 
     # 数据标准化
 
@@ -114,5 +124,6 @@ def main(is_debug=True):
 
 
 if __name__ == '__main__':
-    main(True)
+    main(False)
     # sk()
+    # test()

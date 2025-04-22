@@ -49,16 +49,19 @@ class AdaBoostClassifier(BaseModel):
             min_error = model.fit(X, y, weights).min_error
 
             # 若基分类器错误率比随机猜测还差则终止算法
-            if min_error >= 0.5:
+            if min_error > 0.5:
                 continue
 
             # 计算分类器的权重
-            alpha = 0.5 * np.log((1 - min_error + self._epsilon) / (min_error + self._epsilon))
+            alpha = 0.5 * np.log((1 - min_error + self._epsilon)
+                                 / (min_error + self._epsilon))
             model.alpha = alpha
 
             prediction = model.predict(X)
             # 更新样本权重
             weights *= np.exp(-alpha * y * prediction)
+            # incorrect = prediction != y
+            # weights *= 0.5 * np.exp(alpha * incorrect * (weights > 0))
             # 归一化权重
             weights /= np.sum(weights)
 
@@ -88,7 +91,7 @@ class AdaBoostClassifier(BaseModel):
             return np.ones(n_samples)
 
         for model in self.estimators:
-            y_pred += model.predict(X)
+            y_pred += model.predict(X) * model.alpha
 
         return np.sign(y_pred)
 
