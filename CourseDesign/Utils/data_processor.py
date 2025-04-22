@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import copy
 
 from AdaBoost import AdaBoostClassifier, pos_neg_label, binary_label
 from .Accuracy import accuracy

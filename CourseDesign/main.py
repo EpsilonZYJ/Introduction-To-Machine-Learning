@@ -1,14 +1,14 @@
 import sys
 from Utils import *
 from AdaBoost import *
-from Utils.data_processor import k_fold, class_balance
+from Utils.data_processor import k_fold
 from sklearn.preprocessing import StandardScaler
-import numpy as np
 
-def train(base_model_class, isClassBalanced=True, isStandard=False, **base_params):
+def train(base_model_class, isClassBalanced=True, isStandard=False, isShuffled=False, **base_params):
     """
     训练模型，对指定模型进行训练并输出10折交叉验证的结果
 
+    :param isShuffled: 是否打乱数据
     :param base_model_class: 基学习器类
     :param base_params: 传递给基学习器的参数
     :param isClassBalanced: 是否进行训练集的类别平衡
@@ -32,98 +32,34 @@ def train(base_model_class, isClassBalanced=True, isStandard=False, **base_param
     print("[Running] Base model params: ", base_params)
 
     print("[Training] Training model, estimators: 1")
-    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=1, base_model_class=base_model_class, isClassBalanced=isClassBalanced, **base_params)
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=1, base_model_class=base_model_class, isClassBalanced=isClassBalanced, isShuffled=isShuffled, **base_params)
     print("[Training] Done!")
 
     print("[Training] Training model, estimators: 5")
-    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=5, base_model_class=base_model_class, isClassBalanced=isClassBalanced, **base_params)
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=5, base_model_class=base_model_class, isClassBalanced=isClassBalanced, isShuffled=isShuffled, **base_params)
     print("[Training] Done!")
 
     print("[Training] Training model, estimators: 10")
-    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=10, base_model_class=base_model_class, isClassBalanced=isClassBalanced, **base_params)
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=10, base_model_class=base_model_class, isClassBalanced=isClassBalanced, isShuffled=isShuffled, **base_params)
     print("[Training] Done!")
 
     print("[Training] Training model, estimators: 100")
-    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=100, base_model_class=base_model_class, isClassBalanced=isClassBalanced,**base_params)
+    k_fold(k=10, X_train=train_feature, y_train=train_label, n_estimators=100, base_model_class=base_model_class, isClassBalanced=isClassBalanced,isShuffled=isShuffled, **base_params)
     print("[Training] Done!")
-
-def test():
-    train_feature = load_feature_data('data.csv')
-    train_label = load_label_data('targets.csv')
-    train_label = pos_neg_label(train_label)
-    model = AdaBoostClassifier(n_estimators=10, estimator_class=DecisionStumpClassifier)
-    model.fit(train_feature[368:, :], train_label[368:])
-    y_pred = model.predict(train_feature[0: 368, :])
-    save_data("test.csv", y_pred, np.array(range(len(y_pred))) + 1)
-
 
 def main(is_debug=True):
     set_debug_mode(is_debug)
     if len(sys.argv) > 1:
         isDecisionStump = sys.argv[1]
         if isDecisionStump == '1':
-            train(DecisionStumpClassifier)
+            train(base_model_class=DecisionStumpClassifier, isClassBalanced=True, isStandard=False, isShuffled=True)
         elif isDecisionStump == '0':
-            train(LogisticRegressionClassifier, n_iterations=1000, learning_rate=1e-1)
+            train(base_model_class=LogisticRegressionClassifier, isClassBalanced=True, isStandard=True, isShuffled=True, n_iterations=1000, learning_rate=1e-1)
         else:
             raise ValueError("Invalid argument. Use 1 for DecisionStump and 0 for LogisticRegression.")
     else:
         train(base_model_class=DecisionStumpClassifier, isClassBalanced=True, isStandard=False, isShuffled=True)
-        # train(LogisticRegressionClassifier, isClassBalanced=True, isStandard=True, isShuffled=True, n_iterations=5000, learning_rate=1e-1)
-
-    # 数据标准化
-
-    # 数据随机打乱
-    # n_samples = train_feature.shape[0]
-    # indices = np.random.permutation(n_samples)
-    # train_feature = train_feature[indices]
-    # train_label = train_label[indices]
-
-    # 逻辑回归
-    # lr_model = LogisticRegression(n_iters=100, learning_rate=1e-1)
-    # lr_model.fit(train_feature, train_label, sample_weight=1/np.ones(train_label.shape[0]))
-    # 预测
-    # y_predict = lr_model.predict(train_feature)
-    # print(accuracy(train_label, y_predict))
-    # print(len(train_label[train_label == 1]))
-    # print(len(train_label[train_label == 0]))
-
-    # 逻辑回归
-    # lr_model = LogisticRegression(n_iters=1000, learning_rate=1e-1)
-    # lr_model.train(train_feature, train_label, sample_weights=np.ones(train_label.shape[0])/train_label.shape[0])
-    # 预测
-    # y_predict = lr_model.predict(train_feature)
-    # print(accuracy(train_label, y_predict))
-
-    # 决策树桩
-    # stump_model = DecisionStump()
-    # stump_model.fit(train_feature, train_label)
-    # 预测
-    # y_predict = stump_model.predict(train_feature)
-    # print(accuracy(train_label, y_predict))
-
-    # AdaBoost
-    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=LogisticRegression(learning_rate=1e-1, n_iters=100))
-    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=DecisionStump())
-    # ada_model = AdaBoostClassifier(learning_rate=1.0, n_estimators=10, estimator=LogisticRegression(learning_rate=1e-1, n_iters=100))
-    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=DecisionTreeClassifier(max_depth=1))
-    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=LR())
-    # ada_model.fit(train_feature, train_label)
-    # print(len(ada_model.estimators_))
-    # 预测
-    # y_predict = ada_model.predict(train_feature, is_boolean_label=True)
-    # print(accuracy(train_label, y_predict))
-
-    # ada_model = ABC(n_estimators=10, estimator=DecisionTreeClassifier(max_depth=1))
-    # ada_model = AdaBoostClassifier(n_estimators=10, estimator=LR())
-    # ada_model.fit(train_feature, train_label)
-    # print(len(ada_model.estimators_))
-    # 预测
-    # y_predict = ada_model.predict(train_feature)
-    # print(accuracy(train_label, y_predict))
-
+        # train(base_model_class=LogisticRegressionClassifier, isClassBalanced=True, isStandard=True, isShuffled=True, n_iterations=1000, learning_rate=1e-1)
 
 if __name__ == '__main__':
     main(False)
-    # sk()
-    # test()

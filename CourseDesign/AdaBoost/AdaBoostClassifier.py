@@ -60,8 +60,6 @@ class AdaBoostClassifier(BaseModel):
             prediction = model.predict(X)
             # 更新样本权重
             weights *= np.exp(-alpha * y * prediction)
-            # incorrect = prediction != y
-            # weights *= 0.5 * np.exp(alpha * incorrect * (weights > 0))
             # 归一化权重
             weights /= np.sum(weights)
 

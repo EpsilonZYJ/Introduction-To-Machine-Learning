@@ -94,7 +94,7 @@ class DecisionStumpClassifier(BaseWeakLearner):
         predictions = np.ones(n_samples)
 
         if self.polarity == 1:
-            predictions[feature < self.threshold] = 0
+            predictions[feature < self.threshold] = -1
         else:
-            predictions[feature >= self.threshold] = 0
+            predictions[feature >= self.threshold] = -1
         return predictions
